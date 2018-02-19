@@ -1,8 +1,27 @@
-<adf-form-list [forms]="formList" (row-dblclick)="onRowDblClick($event)">
-</adf-form-list>
+<mat-tab-group [(selectedIndex)]="activeTab" id="list-tabs">
+    <mat-tab href="#formList" label="{{'FORM-LIST.FORM-LIST-TAB' | translate}}">
+        <adf-form-list [forms]="formList" (row-dblclick)="onRowDblClick($event)">
+        </adf-form-list>
+        <button mat-button (click)="store()" color="primary">{{'FORM-LIST.STORE' | translate }}</button>
+        <button mat-button (click)="restore()" color="primary">{{'FORM-LIST.RESTORE' | translate }}</button>
+        <button mat-button (click)="reset()" color="primary">{{'FORM-LIST.RESET' | translate }}</button>
+    </mat-tab>
+    <mat-tab href="#taskList" label="{{'FORM-LIST.TASK-LIST-TAB' | translate}}">
+        <adf-tasklist [state]="'completed'"
+                      [size]="5"
+                      (rowClick)="onTaskRowClick($event)">
+        </adf-tasklist>
+    </mat-tab>
+    <mat-tab href="#processList" label="{{'FORM-LIST.PROCESS-LIST-TAB' | translate}}">
+            <adf-process-instance-list
+                          [state]="'completed'"
+                          [size]="5"
+                          (rowClick)="onProcessRowClick($event)">
+            </adf-process-instance-list>
+    </mat-tab>
+</mat-tab-group>
+
 <div class="form-container" *ngIf="!isEmptyForm()">
     <adf-form [form]="form" [data]="restoredData">
     </adf-form>
 </div>
-<button mat-button (click)="store()" color="primary">{{'FORM-LIST.STORE' | translate }}</button>
-<button mat-button (click)="restore()" color="primary">{{'FORM-LIST.RESTORE' | translate }}</button>

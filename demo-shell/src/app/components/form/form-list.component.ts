@@ -16,7 +16,9 @@
  */
 
 import { Component, ViewChild } from '@angular/core';
-import { FormComponent, FormModel, FormService, LogService } from '@alfresco/adf-core';
+import { FormComponent, FormModel, FormService, LogService, AlfrescoApiService } from '@alfresco/adf-core';
+import { Observable } from 'rxjs/Observable';
+import { ProcessService } from '@alfresco/adf-process-services';
 
 @Component({
     selector: 'app-form-list',
@@ -35,8 +37,17 @@ export class FormListComponent {
 
     storedData: any = {};
     restoredData: any = {};
+    activeTab;
+    taskFormVariables: any[]= [];
+    processFormVariables: any[]= [];
 
-    constructor(private formService: FormService, private logService: LogService) {
+    searchFromCompletedTasks: boolean = false;
+
+
+    constructor(private formService: FormService,
+                private logService: LogService,
+                private apiService: AlfrescoApiService,
+                private processService: ProcessService) {
         // Prevent default outcome actions
         formService.executeOutcome.subscribe(e => {
             e.preventDefault();
@@ -55,8 +66,49 @@ export class FormListComponent {
         this.logService.log(rowForm);
     }
 
+    onTaskRowClick(taskId: any) {
+        Observable.fromPromise(
+            this.apiService.getInstance().activiti.taskFormsApi.getTaskFormVariables(taskId))
+            .subscribe(
+                taskVarList => {
+                    this.getTaskForm(taskId, <any[]>taskVarList);
+                },
+                err => this.logService.error(err));
+    }
+
+    getTaskForm(taskId: string, values:any[]) {
+        this.formService.getTaskForm(taskId).subscribe(
+            formTask => {
+                this.form = this.formService.parseForm(formTask, values);
+            },
+            err => this.logService.error(err)
+        )
+    }
+
+    onProcessRowClick(processInstanceId: string) {
+        this.processService.getProcessTasks(processInstanceId, 'completed').subscribe(
+            taskList => {
+                const firstTask = taskList[0];
+                if (firstTask.id) {
+                    this.processService.getProcessInstanceVariables(processInstanceId)
+                        .subscribe(
+                            (variables) => {
+                                this.processFormVariables = variables;
+                                this.getTaskForm(firstTask.id, variables);
+                            },
+                            err => this.logService.error(err)
+                        );
+                }
+            }
+        )
+    }
+
     isEmptyForm() {
         return this.form === null || this.form === undefined;
+    }
+
+    showTasks(): boolean {
+        return this.isEmptyForm() && this.searchFromCompletedTasks;
     }
 
     store() {
@@ -79,6 +131,10 @@ export class FormListComponent {
     restore() {
         this.restoredData = this.storedData;
         this.storedData = {};
+    }
+
+    reset() {
+        this.form = null;
     }
 
 }
